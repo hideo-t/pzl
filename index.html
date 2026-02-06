@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ジェムクラッシュ - Gem Crush Puzzle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght:700;900&family=Rajdhani:wght:400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-magenta: #ff00ff;
+            --neon-yellow: #ffff00;
+            --deep-purple: #1a0033;
+            --dark-blue: #0a0a1e;
+            --accent-pink: #ff1493;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--deep-purple) 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 0, 255, 0.03) 2px, rgba(255, 0, 255, 0.03) 4px);
+            pointer-events: none;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        .container {
+            text-align: center;
+            z-index: 1;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-magenta), var(--neon-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            letter-spacing: 0.1em;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+            }
+            to {
+                filter: drop-shadow(0 0 25px rgba(255, 0, 255, 0.8));
+            }
+        }
+
+        .score-panel {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            animation: slideDown 0.6s ease-out 0.3s both;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .score-item {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 12px;
+            padding: 0.8rem 2rem;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .score-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        #gameBoard {
+            display: inline-block;
+            background: rgba(10, 10, 30, 0.8);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 3px solid var(--neon-magenta);
+            box-shadow: 
+                0 0 40px rgba(255, 0, 255, 0.4),
+                inset 0 0 30px rgba(255, 0, 255, 0.1);
+            position: relative;
+            animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        canvas {
+            display: block;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            animation: slideUp 0.6s ease-out 0.8s both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        button {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            color: var(--dark-blue);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.5),
+                0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 30px rgba(255, 0, 255, 0.8),
+                0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particle-float 1s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+
+        .combo-text {
+            position: fixed;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 20px rgba(255, 255, 0, 1);
+            pointer-events: none;
+            animation: combo-popup 1s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes combo-popup {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) translateY(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2) translateY(-20px);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1) translateY(-60px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ジェムクラッシュ</h1>
+        
+        <div class="score-panel">
+            <div class="score-item">
+                <div class="score-label">スコア</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">コンボ</div>
+                <div class="score-value" id="combo">0</div>
+            </div>
+        </div>
+
+        <div id="gameBoard">
+            <canvas id="canvas" width="560" height="560"></canvas>
+        </div>
+
+        <div class="controls">
+            <button onclick="game.newGame()">新しいゲーム</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_SIZE = 7;
+        const CELL_SIZE = 80;
+        const GEM_TYPES = 6;
+
+        const GEM_COLORS = [
+            { fill: '#ff0080', glow: 'rgba(255, 0, 128, 0.6)' },      // ピンク
+            { fill: '#00ffff', glow: 'rgba(0, 255, 255, 0.6)' },      // シアン
+            { fill: '#ffff00', glow: 'rgba(255, 255, 0, 0.6)' },      // イエロー
+            { fill: '#00ff00', glow: 'rgba(0, 255, 0, 0.6)' },        // グリーン
+            { fill: '#ff8800', glow: 'rgba(255, 136, 0, 0.6)' },      // オレンジ
+            { fill: '#8800ff', glow: 'rgba(136, 0, 255, 0.6)' }       // パープル
+        ];
+
+        class Gem {
+            constructor(x, y, type) {
+                this.gridX = x;
+                this.gridY = y;
+                this.type = type;
+                this.x = x * CELL_SIZE + CELL_SIZE / 2;
+                this.y = y * CELL_SIZE + CELL_SIZE / 2;
+                this.targetY = this.y;
+                this.scale = 0;
+                this.rotation = 0;
+                this.falling = false;
+            }
+
+            update() {
+                // スケールアニメーション（出現時）
+                if (this.scale < 1) {
+                    this.scale = Math.min(1, this.scale + 0.1);
+                }
+
+                // 落下アニメーション
+                if (this.falling) {
+                    const dy = this.targetY - this.y;
+                    if (Math.abs(dy) > 0.5) {
+                        this.y += dy * 0.3;
+                    } else {
+                        this.y = this.targetY;
+                        this.falling = false;
+                    }
+                }
+
+                this.rotation += 0.02;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.scale(this.scale, this.scale);
+                ctx.rotate(this.rotation);
+
+                const color = GEM_COLORS[this.type];
+                const size = 30;
+
+                // 外側のグロー
+                ctx.shadowColor = color.glow;
+                ctx.shadowBlur = 20;
+
+                // ダイヤモンド形状
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(size * 0.6, 0);
+                ctx.lineTo(0, size);
+                ctx.lineTo(-size * 0.6, 0);
+                ctx.closePath();
+
+                // グラデーション
+                const gradient = ctx.createRadialGradient(0, -size * 0.3, 0, 0, 0, size);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                gradient.addColorStop(0.5, color.fill);
+                gradient.addColorStop(1, color.fill);
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // ハイライト
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(-size * 0.2, -size * 0.4, size * 0.15, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.grid = [];
+                this.selectedGem = null;
+                this.score = 0;
+                this.combo = 0;
+                this.animating = false;
+                this.particles = [];
+
+                canvas.addEventListener('click', (e) => this.handleClick(e));
+                this.newGame();
+                this.gameLoop();
+            }
+
+            newGame() {
+                this.score = 0;
+                this.combo = 0;
+                this.updateScore();
+                this.initializeGrid();
+            }
+
+            initializeGrid() {
+                this.grid = [];
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    this.grid[y] = [];
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        let type;
+                        do {
+                            type = Math.floor(Math.random() * GEM_TYPES);
+                        } while (this.wouldMatch(x, y, type));
+                        
+                        const gem = new Gem(x, y, type);
+                        gem.y = -CELL_SIZE;
+                        gem.targetY = y * CELL_SIZE + CELL_SIZE / 2;
+                        gem.falling = true;
+                        this.grid[y][x] = gem;
+                    }
+                }
+            }
+
+            wouldMatch(x, y, type) {
+                // 横チェック
+                let count = 1;
+                for (let i = x - 1; i >= 0 && this.grid[y] && this.grid[y][i] && this.grid[y][i].type === type; i--) count++;
+                for (let i = x + 1; i < GRID_SIZE && this.grid[y] && this.grid[y][i] && this.grid[y][i].type === type; i++) count++;
+                if (count >= 3) return true;
+
+                // 縦チェック
+                count = 1;
+                for (let i = y - 1; i >= 0 && this.grid[i] && this.grid[i][x] && this.grid[i][x].type === type; i--) count++;
+                for (let i = y + 1; i < GRID_SIZE && this.grid[i] && this.grid[i][x] && this.grid[i][x].type === type; i++) count++;
+                return count >= 3;
+            }
+
+            handleClick(e) {
+                if (this.animating) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+                const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+                if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return;
+
+                if (!this.selectedGem) {
+                    this.selectedGem = { x, y };
+                } else {
+                    const dx = Math.abs(x - this.selectedGem.x);
+                    const dy = Math.abs(y - this.selectedGem.y);
+
+                    if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                        this.swapGems(this.selectedGem.x, this.selectedGem.y, x, y);
+                    }
+                    this.selectedGem = null;
+                }
+            }
+
+            swapGems(x1, y1, x2, y2) {
+                const temp = this.grid[y1][x1];
+                this.grid[y1][x1] = this.grid[y2][x2];
+                this.grid[y2][x2] = temp;
+
+                this.grid[y1][x1].gridX = x1;
+                this.grid[y1][x1].gridY = y1;
+                this.grid[y1][x1].x = x1 * CELL_SIZE + CELL_SIZE / 2;
+                this.grid[y1][x1].targetY = y1 * CELL_SIZE + CELL_SIZE / 2;
+                this.grid[y1][x1].falling = true;
+
+                this.grid[y2][x2].gridX = x2;
+                this.grid[y2][x2].gridY = y2;
+                this.grid[y2][x2].x = x2 * CELL_SIZE + CELL_SIZE / 2;
+                this.grid[y2][x2].targetY = y2 * CELL_SIZE + CELL_SIZE / 2;
+                this.grid[y2][x2].falling = true;
+
+                setTimeout(() => {
+                    if (!this.findMatches().length) {
+                        // マッチしない場合は元に戻す
+                        this.swapGems(x1, y1, x2, y2);
+                        this.combo = 0;
+                        this.updateScore();
+                    } else {
+                        this.processMatches();
+                    }
+                }, 300);
+            }
+
+            findMatches() {
+                const matches = [];
+                const checked = new Set();
+
+                // 横方向チェック
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let x = 0; x < GRID_SIZE - 2; x++) {
+                        const type = this.grid[y][x].type;
+                        let count = 1;
+                        for (let i = x + 1; i < GRID_SIZE && this.grid[y][i].type === type; i++) {
+                            count++;
+                        }
+                        if (count >= 3) {
+                            for (let i = 0; i < count; i++) {
+                                const key = `${x + i},${y}`;
+                                if (!checked.has(key)) {
+                                    matches.push({ x: x + i, y });
+                                    checked.add(key);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 縦方向チェック
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    for (let y = 0; y < GRID_SIZE - 2; y++) {
+                        const type = this.grid[y][x].type;
+                        let count = 1;
+                        for (let i = y + 1; i < GRID_SIZE && this.grid[i][x].type === type; i++) {
+                            count++;
+                        }
+                        if (count >= 3) {
+                            for (let i = 0; i < count; i++) {
+                                const key = `${x},${y + i}`;
+                                if (!checked.has(key)) {
+                                    matches.push({ x, y: y + i });
+                                    checked.add(key);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return matches;
+            }
+
+            async processMatches() {
+                this.animating = true;
+                let hasMatches = true;
+
+                while (hasMatches) {
+                    const matches = this.findMatches();
+                    if (!matches.length) {
+                        hasMatches = false;
+                        break;
+                    }
+
+                    this.combo++;
+                    this.score += matches.length * 10 * this.combo;
+                    this.updateScore();
+
+                    if (this.combo > 1) {
+                        this.showComboText(this.combo);
+                    }
+
+                    // パーティクル生成
+                    matches.forEach(({ x, y }) => {
+                        this.createParticles(x, y);
+                    });
+
+                    // マッチしたジェムを削除
+                    matches.forEach(({ x, y }) => {
+                        this.grid[y][x] = null;
+                    });
+
+                    await this.sleep(300);
+
+                    // ジェムを落下
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        let emptySpaces = 0;
+                        for (let y = GRID_SIZE - 1; y >= 0; y--) {
+                            if (this.grid[y][x] === null) {
+                                emptySpaces++;
+                            } else if (emptySpaces > 0) {
+                                const newY = y + emptySpaces;
+                                this.grid[newY][x] = this.grid[y][x];
+                                this.grid[y][x] = null;
+                                this.grid[newY][x].gridY = newY;
+                                this.grid[newY][x].targetY = newY * CELL_SIZE + CELL_SIZE / 2;
+                                this.grid[newY][x].falling = true;
+                            }
+                        }
+
+                        // 新しいジェムを生成
+                        for (let y = 0; y < emptySpaces; y++) {
+                            const type = Math.floor(Math.random() * GEM_TYPES);
+                            const gem = new Gem(x, y, type);
+                            gem.y = -CELL_SIZE * (emptySpaces - y);
+                            gem.targetY = y * CELL_SIZE + CELL_SIZE / 2;
+                            gem.falling = true;
+                            this.grid[y][x] = gem;
+                        }
+                    }
+
+                    await this.sleep(500);
+                }
+
+                this.combo = 0;
+                this.updateScore();
+                this.animating = false;
+            }
+
+            createParticles(gridX, gridY) {
+                const x = gridX * CELL_SIZE + CELL_SIZE / 2;
+                const y = gridY * CELL_SIZE + CELL_SIZE / 2;
+                const rect = canvas.getBoundingClientRect();
+                const color = GEM_COLORS[this.grid[gridY][gridX].type].fill;
+
+                for (let i = 0; i < 15; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = (rect.left + x) + 'px';
+                    particle.style.top = (rect.top + y) + 'px';
+                    particle.style.width = '8px';
+                    particle.style.height = '8px';
+                    particle.style.background = color;
+                    particle.style.boxShadow = `0 0 10px ${color}`;
+                    
+                    const angle = (Math.PI * 2 * i) / 15;
+                    const distance = 50 + Math.random() * 50;
+                    particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                    particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                    
+                    document.body.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1000);
+                }
+            }
+
+            showComboText(combo) {
+                const comboEl = document.createElement('div');
+                comboEl.className = 'combo-text';
+                comboEl.textContent = `COMBO×${combo}!`;
+                comboEl.style.left = '50%';
+                comboEl.style.top = '30%';
+                comboEl.style.transform = 'translateX(-50%)';
+                document.body.appendChild(comboEl);
+                setTimeout(() => comboEl.remove(), 1000);
+            }
+
+            updateScore() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('combo').textContent = this.combo;
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            gameLoop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // グリッド背景
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        ctx.fillStyle = (x + y) % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.1)';
+                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+
+                // 選択されたジェムのハイライト
+                if (this.selectedGem) {
+                    const { x, y } = this.selectedGem;
+                    ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = 'rgba(0, 255, 255, 1)';
+                    ctx.shadowBlur = 20;
+                    ctx.strokeRect(x * CELL_SIZE + 5, y * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+                    ctx.shadowBlur = 0;
+                }
+
+                // ジェムの更新と描画
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        if (this.grid[y][x]) {
+                            this.grid[y][x].update();
+                            this.grid[y][x].draw();
+                        }
+                    }
+                }
+
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>

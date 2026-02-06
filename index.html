@@ -307,17 +307,15 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const GRID_SIZE = 7;
-        const CELL_SIZE = 80;
-        const GEM_TYPES = 6;
+        const GRID_SIZE = 8;
+        const CELL_SIZE = 70;
+        const GEM_TYPES = 4;
 
         const GEM_COLORS = [
             { fill: '#ff0080', glow: 'rgba(255, 0, 128, 0.6)' },      // ピンク
             { fill: '#00ffff', glow: 'rgba(0, 255, 255, 0.6)' },      // シアン
             { fill: '#ffff00', glow: 'rgba(255, 255, 0, 0.6)' },      // イエロー
-            { fill: '#00ff00', glow: 'rgba(0, 255, 0, 0.6)' },        // グリーン
-            { fill: '#ff8800', glow: 'rgba(255, 136, 0, 0.6)' },      // オレンジ
-            { fill: '#8800ff', glow: 'rgba(136, 0, 255, 0.6)' }       // パープル
+            { fill: '#00ff00', glow: 'rgba(0, 255, 0, 0.6)' }         // グリーン
         ];
 
         class Gem {
@@ -420,10 +418,8 @@
                 for (let y = 0; y < GRID_SIZE; y++) {
                     this.grid[y] = [];
                     for (let x = 0; x < GRID_SIZE; x++) {
-                        let type;
-                        do {
-                            type = Math.floor(Math.random() * GEM_TYPES);
-                        } while (this.wouldMatch(x, y, type));
+                        // 完全にランダムに配置（マッチチェックなし）
+                        const type = Math.floor(Math.random() * GEM_TYPES);
                         
                         const gem = new Gem(x, y, type);
                         gem.y = -CELL_SIZE;
@@ -432,6 +428,11 @@
                         this.grid[y][x] = gem;
                     }
                 }
+                
+                // 初期配置後にマッチを処理
+                setTimeout(() => {
+                    this.processMatches();
+                }, 1000);
             }
 
             wouldMatch(x, y, type) {
@@ -558,11 +559,14 @@
                     }
 
                     this.combo++;
-                    this.score += matches.length * 10 * this.combo;
+                    const basePoints = matches.length * 10;
+                    const comboMultiplier = this.combo;
+                    const bonusPoints = matches.length > 4 ? (matches.length - 3) * 20 : 0;
+                    this.score += (basePoints + bonusPoints) * comboMultiplier;
                     this.updateScore();
 
-                    if (this.combo > 1) {
-                        this.showComboText(this.combo);
+                    if (this.combo >= 1) {
+                        this.showComboText(this.combo, matches.length);
                     }
 
                     // パーティクル生成
@@ -638,10 +642,14 @@
                 }
             }
 
-            showComboText(combo) {
+            showComboText(combo, matchCount) {
                 const comboEl = document.createElement('div');
                 comboEl.className = 'combo-text';
-                comboEl.textContent = `COMBO×${combo}!`;
+                if (combo === 1) {
+                    comboEl.textContent = `${matchCount}個マッチ!`;
+                } else {
+                    comboEl.textContent = `COMBO×${combo}! (+${matchCount})`;
+                }
                 comboEl.style.left = '50%';
                 comboEl.style.top = '30%';
                 comboEl.style.transform = 'translateX(-50%)';
